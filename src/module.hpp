@@ -124,6 +124,8 @@ public:
      * \brief Gets a list of functions in this module.
      */
     const std::vector<AbstractFunc>& funcs() const { return _funcs; }
+
+    static AbstractModule parse(const void* data, size_t size);
 };
 
 /**

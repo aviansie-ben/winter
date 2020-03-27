@@ -16,7 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "binary-reader.hpp"
+#include "module.hpp"
+#include "thread.hpp"
 #include "wassert.hpp"
 
 #include <memory>
@@ -33,14 +34,10 @@ struct Options {
 
 } // namespace winter
 
-static wabt::Features s_features; // static so we access at option processing time
-
 static winter::Options parseOptions(int argc, char** argv) {
     winter::Options options;
 
     wabt::OptionParser parser("winter-interp", "   executes a WebAssembly module\n");
-
-    s_features.AddOptions(&parser);
 
     parser.AddArgument("filename",
                        wabt::OptionParser::ArgumentCount::One,
@@ -57,17 +54,21 @@ static int ProgramMain(const winter::Options& options) {
     auto result = wabt::ReadFile(options.modulePath, &data_buffer);
     WASSERT(result == wabt::Result::Ok, "Failed to load data from file");
 
-    auto binaryReader = winter::BinaryReader {};
-    const auto kReadDebugNames = true;
-    const auto kStopOnFirstError = true;
-    const auto kFailOnCustomSectionError = true;
-    wabt::ReadBinaryOptions readerOptions(s_features,
-                                          nullptr,
-                                          kReadDebugNames,
-                                          kStopOnFirstError,
-                                          kFailOnCustomSectionError);
-    result = ReadBinary(data_buffer.data(), data_buffer.size(), &binaryReader, readerOptions);
-    WASSERT(result == wabt::Result::Ok, "Failed to read binary data");
+    winter::Environment env;
+    winter::Module module(
+        winter::AbstractModule::parse(data_buffer.data(), data_buffer.size()),
+        env
+    );
+    auto instance = winter::ModuleInstance::instantiate(module, winter::ImportEnvironment());
+
+    winter::Thread thread;
+
+    for (const winter::Export& e : instance->exports()) {
+        if (e.type != winter::ExportType::Func)
+            break;
+
+        thread.execute(instance->funcs()[e.idx], {});
+    }
 
     return 0;
 }

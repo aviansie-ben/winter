@@ -16,13 +16,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "wabt/src/binary-reader-nop.h"
-#include "wabt/src/type-checker.h"
+#ifndef WINTER_RESULT_HPP
+#define WINTER_RESULT_HPP
 
-#include <map>
+#include <cstdint>
 
 namespace winter {
 
-class BinaryReader : public wabt::BinaryReaderNop {};
+enum class Result : uint32_t {
+    SUCCESS = 0,
+    TRAP_USER = 1,
+    TRAP_INTERNAL = 2,
+    TRAP_INTERNAL_FATAL = 3
+};
 
-} // namespace winter
+}
+
+#endif

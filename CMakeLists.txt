@@ -27,6 +27,7 @@ enable_testing()
 set(CMAKE_CXX_STANDARD 11)
 
 add_subdirectory(third_party/wabt EXCLUDE_FROM_ALL)
+target_compile_options(wabt BEFORE PRIVATE -fPIC)
 target_include_directories(wabt INTERFACE
     # needed because wabt doesn't use `target_include_directories()`
     ${WABT_SOURCE_DIR}
@@ -42,6 +43,8 @@ configure_file(${WINTER_SOURCE_DIR}/winter_config.h.in ${Winter_BINARY_DIR}/wint
 
 add_library(winter SHARED
     ${WINTER_SOURCE_DIR}/func.cpp
+    ${WINTER_SOURCE_DIR}/interp.cpp
+    ${WINTER_SOURCE_DIR}/load.cpp
     ${WINTER_SOURCE_DIR}/memory.cpp
     ${WINTER_SOURCE_DIR}/module.cpp
     ${WINTER_SOURCE_DIR}/type.cpp

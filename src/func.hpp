@@ -28,6 +28,7 @@
 #include <vector>
 
 #include "environment.hpp"
+#include "opcode.hpp"
 #include "type.hpp"
 #include "wassert.hpp"
 
@@ -60,6 +61,40 @@ public:
     friend class InstructionCursor;
 };
 
+class InstructionStreamBuilder {
+    std::vector<uint8_t> _stream;
+
+    template <typename T>
+    void write(const T& val) {
+        auto off = _stream.size();
+        
+        for (size_t i = 0; i < sizeof(T); i++)
+            _stream.push_back(0);
+
+        memcpy(&_stream[off], &val, sizeof(T));
+    }
+public:
+    void write_u8(uint8_t val) {
+        _stream.push_back(val);
+    }
+
+    void write_u16(uint16_t val) {
+        write(val);
+    }
+
+    void write_opcode(OpcodeValue opcode) {
+        write(static_cast<uint16_t>(opcode));
+    }
+
+    void write_u32(uint32_t val) {
+        write(val);
+    }
+
+    InstructionStream finish() {
+        return InstructionStream(std::move(_stream));
+    }
+};
+
 /**
  * \brief Represents a cursor for reading from an InstructionStream.
  */
@@ -69,6 +104,17 @@ class InstructionCursor {
 
     const uint8_t* begin() const { return _stream->_stream.data(); }
     const uint8_t* end() const { return _stream->_stream.data() + _stream->size(); }
+
+    template <typename T>
+    T read() {
+        T val;
+
+        WASSERT(end() - _cursor > sizeof(T), "Instruction cursor out-of-bounds");
+        memcpy(&val, _cursor, sizeof(T));
+        _cursor += sizeof(T);
+
+        return val;
+    }
 public:
     InstructionCursor(const InstructionStream* stream, size_t off) : _stream(stream) {
         WASSERT(off <= _stream->size(), "Instruction cursor out-of-bounds");
@@ -97,6 +143,18 @@ public:
         WASSERT(_cursor != end(), "Instruction cursor out-of-bounds");
 
         return *(_cursor++);
+    }
+
+    uint16_t read_u16() {
+        return read<uint16_t>();
+    }
+
+    OpcodeValue read_opcode() {
+        return static_cast<OpcodeValue>(read_u16());
+    }
+
+    uint32_t read_u32() {
+        return read<uint32_t>();
     }
 };
 

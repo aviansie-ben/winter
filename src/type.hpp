@@ -189,8 +189,20 @@ union Value {
     uint32_t i32; ///< This value as a WebAssembly i32.
     uint64_t i64; ///< This value as a WebAssembly i64.
     float f32; ///< This value as a WebAssembly f32.
-    float f64; ///< This value as a WebAssembly f64.
+    double f64; ///< This value as a WebAssembly f64.
     void* ref; ///< This value as a WebAssembly reference.
+
+    static Value for_i32(uint32_t val) {
+        Value v;
+        v.i32 = val;
+        return v;
+    }
+
+    static Value for_i64(uint64_t val) {
+        Value v;
+        v.i64 = val;
+        return v;
+    }
 };
 
 /**
